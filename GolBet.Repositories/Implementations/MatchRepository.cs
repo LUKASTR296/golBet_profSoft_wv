@@ -1,4 +1,4 @@
-﻿// GolBet.Repositories/Implementations/MatchRepository.cs
+﻿
 using GolBet.Entities;
 using GolBet.Entities.Enums;
 using GolBet.Repositories.Data;
@@ -11,19 +11,34 @@ public class MatchRepository : GenericRepository<Match>, IMatchRepository
 {
     public MatchRepository(AppDbContext context) : base(context) { }
 
-    public async Task<IEnumerable<Match>> GetAllWithTeamsAsync(MatchStatus? status = null)
+    public async Task<IEnumerable<Match>> GetAllWithTeamsAsync(    //
+        MatchStatus? status = null,
+        string? search = null)
     {
         var query = _dbSet
             .Include(m => m.HomeTeam)
             .Include(m => m.AwayTeam)
-            .Where(m => m.IsActive)
+            .Where(m => m.IsActive)                      //
             .AsNoTracking()
             .AsQueryable();
 
         if (status.HasValue)
+        {
             query = query.Where(m => m.Status == status.Value);
+        }
 
-        return await query.OrderBy(m => m.Date).ToListAsync();
+        if (!string.IsNullOrWhiteSpace(search)) //
+        {
+            var searchTerm = $"%{search.Trim().ToLower()}%";
+
+            query = query.Where(m =>
+                EF.Functions.Like(m.HomeTeam.Name.ToLower(), searchTerm) ||
+                EF.Functions.Like(m.AwayTeam.Name.ToLower(), searchTerm));
+        }
+
+        return await query
+            .OrderBy(m => m.Date) //
+            .ToListAsync();
     }
 
     public async Task<Match?> GetByIdWithDetailsAsync(int id)

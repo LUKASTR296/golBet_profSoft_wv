@@ -1,4 +1,4 @@
-﻿// GolBet.Services/Implementations/MatchService.cs
+﻿
 using AutoMapper;
 using GolBet.Entities;
 using GolBet.Entities.Enums;
@@ -20,11 +20,14 @@ public class MatchService : IMatchService
         _mapper = mapper;
     }
 
-    public async Task<IEnumerable<MatchDto>> GetBoardAsync(MatchStatus? status = null)
+    public async Task<IEnumerable<MatchDto>> GetBoardAsync(
+        MatchStatus? status = null,
+        string? search = null)
     {
-        var matches = await _matchRepository.GetAllWithTeamsAsync(status);
+        var matches = await _matchRepository.GetAllWithTeamsAsync(status, search);            //
         return _mapper.Map<IEnumerable<MatchDto>>(matches);
     }
+
     public async Task<MatchDetailDto?> GetDetailAsync(int id)
     {
         var match = await _matchRepository.GetByIdWithDetailsAsync(id);
@@ -37,7 +40,7 @@ public class MatchService : IMatchService
         if (match is null) return null;
 
         var dto = _mapper.Map<MatchFormDto>(match);
-        dto.Date = dto.Date.ToColombiaTime();        // UTC (DB) -> local (form)
+        dto.Date = dto.Date.ToColombiaTime(); // UTC (DB) -> local (form)
         return dto;
     }
 
@@ -46,7 +49,7 @@ public class MatchService : IMatchService
         ValidateBusinessRules(dto);
 
         var match = _mapper.Map<Match>(dto);
-        match.Date = dto.Date.ToUtcFromColombia();   // local (form) -> UTC (DB)
+        match.Date = dto.Date.ToUtcFromColombia(); // local (form) -> UTC (DB)
         await _matchRepository.AddAsync(match);
     }
 
@@ -76,6 +79,4 @@ public class MatchService : IMatchService
             throw new InvalidOperationException(
                 "La fecha del partido debe ser futura.");
     }
-
-
 }
